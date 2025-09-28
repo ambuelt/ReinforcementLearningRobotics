@@ -30,7 +30,7 @@ class QLearningOnline:
     def choose_action(self, state: Tuple[int, int]) -> int:
         """
         Select action using ε-greedy:
-        using a = arg max_a Q(s, a) with prob (1 - ε);.
+        using a = arg max_a Q(s, a) with prob (1 - epsilon);.
         """
         
         # decompose state

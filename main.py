@@ -4,7 +4,7 @@ import OnlineLearning.QLearn_Online as ql
 import numpy as np
 import matplotlib.pyplot as plt
 
-def OnlineLearning():
+def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
     """
     Runs Q-learning online on the GridWorld environment and tracks metrics.
     """
@@ -12,14 +12,8 @@ def OnlineLearning():
     # create grid world environment using default penalty
     env = g.GridWorld()
     
-    lr = 0.1 # learning rate example
-    df = 0.9 # discount factor example
-    er = 0.2 # exploration rate example
-    
     # create Q-learning online agent
     agent = ql.QLearningOnline(learning_rate=lr, discount_factor=df, exploration_rate=er, init="zeros")
-    
-    num_episodes = 500 # number of episodes for training
 
     # metrics tracking
     q_changes = []       # average |delta Q| per episode
@@ -99,7 +93,14 @@ def OnlineLearning():
     
 
 def main():
-
+    
+    # Parameters
+    lr = 0.1 # learning rate example
+    df = 0.9 # discount factor example
+    er = 0.2 # exploration rate example
+    num_episodes = 500 # number of episodes for training
+    
+    # Run online learning
     OnlineLearning()
 
 
