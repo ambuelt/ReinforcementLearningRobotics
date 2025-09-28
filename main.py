@@ -101,7 +101,7 @@ def main():
     num_episodes = 500 # number of episodes for training
     
     # Run online learning
-    OnlineLearning()
+    OnlineLearning(lr, df, er, num_episodes)
 
 
 
