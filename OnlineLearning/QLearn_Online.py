@@ -25,6 +25,7 @@ class QLearningOnline:
             self.q_table = np.zeros((3, 4, 4), dtype=float)
         elif init == "random":
             self.q_table = np.random.rand(3, 4, 4)
+        else:
             raise ValueError("init must be 'zeros' or 'random'")
         
     def choose_action(self, state: Tuple[int, int]) -> int:

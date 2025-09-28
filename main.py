@@ -1,8 +1,10 @@
 import Graph.Graph as g
 import OnlineLearning.QLearn_Online as ql
-
+import time
 import numpy as np
 import matplotlib.pyplot as plt
+
+BREAK_CON = 0.00008
 
 def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
     """
@@ -13,7 +15,7 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
     env = g.GridWorld()
     
     # create Q-learning online agent
-    agent = ql.QLearningOnline(learning_rate=lr, discount_factor=df, exploration_rate=er, init="zeros")
+    agent = ql.QLearningOnline(learning_rate=lr, discount_factor=df, exploration_rate=er, init="random")
 
     # metrics tracking
     q_changes = []       # average |delta Q| per episode
@@ -45,7 +47,8 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
             total_reward += reward
 
         # metrics update
-        q_changes.append(np.mean(deltas))
+        q_val_delta = np.mean(deltas)
+        q_changes.append(q_val_delta)
         greedy_policy = np.argmax(agent.q_table, axis=2)
         if prev_policy is None:
             stable_frac = 0.0
@@ -54,6 +57,9 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
         policy_stable.append(stable_frac)
         prev_policy = greedy_policy.copy()
         returns.append(total_reward)
+        if q_val_delta <= BREAK_CON:
+            print('brk')
+            break
 
     # Final metrics output
     window = 10
@@ -63,7 +69,7 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
     print("Policy stability   :", [f"{v:.2f}" for v in policy_stable[-window:]])
     
     # Plotting metrics
-    episodes = range(1, num_episodes + 1)
+    episodes = range(1, len(q_changes)+1)
 
     plt.figure(figsize=(12, 4))
 
@@ -93,7 +99,7 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
     
 
 def main():
-    
+    tik = time.time()
     # Parameters
     lr = 0.1 # learning rate example
     df = 0.9 # discount factor example
@@ -102,6 +108,9 @@ def main():
     
     # Run online learning
     OnlineLearning(lr, df, er, num_episodes)
+    tok = time.time()
+    runtime = tok-tik
+    print(f'Runtime: {runtime:.2f} ms')
 
 
 
