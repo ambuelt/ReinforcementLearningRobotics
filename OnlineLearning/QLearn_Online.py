@@ -37,7 +37,7 @@ class QLearningOnline:
         # decompose state
         r, c = state
         
-        # ε-greedy action selection
+        # ε-greedy action selection (Probability of choosing random rather than based on Q)
         if random.random() < self.exploration_rate:
             return random.randint(0, 3)  
         return int(np.argmax(self.q_table[r, c, :])) 

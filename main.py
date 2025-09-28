@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 
 BREAK_CON = 0.00008
 
-def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
+def OnlineLearning(lr: float, df: float, er: float, num_episodes: int, penalty: float) -> None:
     """
     Runs Q-learning online on the GridWorld environment and tracks metrics.
     """
     
     # create grid world environment using default penalty
-    env = g.GridWorld()
+    env = g.GridWorld(penalty = penalty)
     
     # create Q-learning online agent
     agent = ql.QLearningOnline(learning_rate=lr, discount_factor=df, exploration_rate=er, init="random")
@@ -58,8 +58,16 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
         prev_policy = greedy_policy.copy()
         returns.append(total_reward)
         if q_val_delta <= BREAK_CON:
-            print('brk')
             break
+    
+    # Show final Q-Action pair for each grid
+    q_action_pair = np.zeros_like(env.grid,dtype='str')
+    q_action_dict = {0:'N', 1:'E',2:'S',3:'W'}
+    for i in range(0,env.grid.shape[0]):
+        for j in range(0, env.grid.shape[1]):
+            q_action_pair[i][j]=(q_action_dict[agent.choose_action((i,j))])
+        
+        
 
     # Final metrics output
     window = 10
@@ -67,12 +75,14 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
     print("Average return     :", [f"{v:.2f}" for v in returns[-window:]])
     print("Q-value changes    :", [f"{v:.6f}" for v in q_changes[-window:]])
     print("Policy stability   :", [f"{v:.2f}" for v in policy_stable[-window:]])
+    print('State Action Grid:\n',q_action_pair)
+
     
     # Plotting metrics
     episodes = range(1, len(q_changes)+1)
-
+    
     plt.figure(figsize=(12, 4))
-
+    plt.suptitle(f'LR {lr:.2f}, DF {df:.2f}, ER {er:.2f}, P {penalty:.2f}')
     plt.subplot(1, 3, 1)
     plt.plot(episodes, returns, label="Return")
     plt.xlabel("Episode")
@@ -99,18 +109,37 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int) -> None:
     
 
 def main():
+    lr_ = [0.05, 0.1, 0.3]
+    df_ = [0.8, 0.95,0.99]
+    er_ = [0.05,0.2, 0.5]
+    
+    
+    p = -1
+    tik = time.time()
+    num_episodes = 500 # number of episodes for training
+    for i in lr_:
+        for j in df_:
+            for k in er_:
+                # Run online learning
+                OnlineLearning(i, j, k, num_episodes,penalty=p)
+    tok = time.time()
+    runtime = tok-tik
+    print(f'Runtime: {runtime:.3f} seconds')
+    
+   
+    
     tik = time.time()
     # Parameters
     lr = 0.1 # learning rate example
     df = 0.9 # discount factor example
     er = 0.2 # exploration rate example
-    num_episodes = 500 # number of episodes for training
+    p = -200
     
     # Run online learning
-    OnlineLearning(lr, df, er, num_episodes)
+    OnlineLearning(lr, df, er, num_episodes,penalty=p)
     tok = time.time()
     runtime = tok-tik
-    print(f'Runtime: {runtime:.2f} ms')
+    print(f'Runtime: {runtime:.3f} seconds')
 
 
 
