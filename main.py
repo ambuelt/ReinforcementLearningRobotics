@@ -81,32 +81,34 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int, penalty: 
     
     # Plotting metrics
     episodes = range(1, len(q_changes)+1)
-    
-    plt.figure(figsize=(12, 4))
-    plt.suptitle(f'LR {lr:.2f}, DF {df:.2f}, ER {er:.2f}, P {penalty:.2f}')
-    plt.subplot(1, 3, 1)
-    plt.plot(episodes, returns, label="Return")
-    plt.xlabel("Episode")
-    plt.ylabel("Return")
-    plt.title("Episode Returns")
-    plt.grid(True)
 
-    plt.subplot(1, 3, 2)
-    plt.plot(episodes, q_changes, label="$\delta$Q", color="orange")
-    plt.xlabel("Episode")
-    plt.ylabel("Avg |$\delta$Q|")
-    plt.title("Q-value Changes")
-    plt.grid(True)
+    # 1 = plot the data, 0 = turn plot off
+    if 1:
+        plt.figure(figsize=(12, 4))
+        plt.suptitle(f'ONLINE : LR {lr:.2f}, DF {df:.2f}, ER {er:.2f}, P {penalty:.2f}')
+        plt.subplot(1, 3, 1)
+        plt.plot(episodes, returns, label="Return")
+        plt.xlabel("Episode")
+        plt.ylabel("Return")
+        plt.title("Episode Returns")
+        plt.grid(True)
 
-    plt.subplot(1, 3, 3)
-    plt.plot(episodes, policy_stable, label="Stability", color="green")
-    plt.xlabel("Episode")
-    plt.ylabel("Stable fraction")
-    plt.title("Policy Stability")
-    plt.grid(True)
+        plt.subplot(1, 3, 2)
+        plt.plot(episodes, q_changes, label="$\delta$Q", color="orange")
+        plt.xlabel("Episode")
+        plt.ylabel("Avg |$\delta$Q|")
+        plt.title("Q-value Changes")
+        plt.grid(True)
 
-    plt.tight_layout()
-    plt.show()
+        plt.subplot(1, 3, 3)
+        plt.plot(episodes, policy_stable, label="Stability", color="green")
+        plt.xlabel("Episode")
+        plt.ylabel("Stable fraction")
+        plt.title("Policy Stability")
+        plt.grid(True)
+
+        plt.tight_layout()
+        plt.show()
 
 def OfflineLearning(episode: int, epoch: int, lr: float, df: float, penalty: float) -> None:
     """
@@ -145,31 +147,33 @@ def OfflineLearning(episode: int, epoch: int, lr: float, df: float, penalty: flo
     # Plotting metrics
     episodes = range(1, len(agent.q_changes)+1)
     
-    plt.figure(figsize=(12, 4))
-    plt.suptitle(f'OFFLINE LEARNING : LR {lr:.2f}, DF {df:.2f}, P {penalty:.2f}')
-    plt.subplot(1, 3, 1)
-    plt.plot(episodes, agent.returns, label="Return")
-    plt.xlabel("Episode")
-    plt.ylabel("Return")
-    plt.title("Episode Returns")
-    plt.grid(True)
+    # 1 = plot the data, 0 = turn plot off
+    if 1:
+        plt.figure(figsize=(12, 4))
+        plt.suptitle(f'OFFLINE : LR {lr:.2f}, DF {df:.2f}, ER {er:.2f}, P {penalty:.2f}')
+        plt.subplot(1, 3, 1)
+        plt.plot(episodes, returns, label="Return")
+        plt.xlabel("Episode")
+        plt.ylabel("Return")
+        plt.title("Episode Returns")
+        plt.grid(True)
 
-    plt.subplot(1, 3, 2)
-    plt.plot(episodes, agent.q_changes, label="$\delta$Q", color="orange")
-    plt.xlabel("Episode")
-    plt.ylabel("Avg |$\delta$Q|")
-    plt.title("Q-value Changes")
-    plt.grid(True)
+        plt.subplot(1, 3, 2)
+        plt.plot(episodes, q_changes, label="$\delta$Q", color="orange")
+        plt.xlabel("Episode")
+        plt.ylabel("Avg |$\delta$Q|")
+        plt.title("Q-value Changes")
+        plt.grid(True)
 
-    plt.subplot(1, 3, 3)
-    plt.plot(episodes, agent.policy_stable, label="Stability", color="green")
-    plt.xlabel("Episode")
-    plt.ylabel("Stable fraction")
-    plt.title("Policy Stability")
-    plt.grid(True)
+        plt.subplot(1, 3, 3)
+        plt.plot(episodes, policy_stable, label="Stability", color="green")
+        plt.xlabel("Episode")
+        plt.ylabel("Stable fraction")
+        plt.title("Policy Stability")
+        plt.grid(True)
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
     
 
 def main():
