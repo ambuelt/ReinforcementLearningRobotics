@@ -1,5 +1,6 @@
 import Graph.Graph as g
 import OnlineLearning.QLearn_Online as ql
+import OfflineLearning.QLearn_Offline as ql_off
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -106,6 +107,69 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int, penalty: 
 
     plt.tight_layout()
     plt.show()
+
+def OfflineLearning(episode: int, epoch: int, lr: float, df: float, penalty: float) -> None:
+    """
+    Runs offline Q-learning in the GridWorld environment and tracks metrics
+    """
+    
+    # i) Create grid world environment
+    grid = g.GridWorld(penalty = penalty)
+    
+    # ii) Create Q-learning offline agent
+    agent = ql_off.QLearningOffline(grid, epoch=epoch, learning_rate=lr, discount_factor=df)
+
+    # iii) Create dataset to train on made up of a list of tuples containing the current state, action, reward, and next state
+    data_set = agent.generate_training_dataset(grid, episode)
+
+    # iv) Update Offline Qlearning
+    q_table = agent.offline_q_learning(grid, data_set)
+    
+      
+
+    # Final metrics output
+    window = 10
+    print("\n=== Metrics (last {} episodes) ===".format(window))
+    print("Average return     :", [f"{v:.2f}" for v in agent.returns[-window:]])
+    print("Q-value changes    :", [f"{v:.6f}" for v in agent.q_changes[-window:]])
+    print("Policy stability   :", [f"{v:.2f}" for v in agent.policy_stable[-window:]])
+
+    # Show final Q-Action pair for each grid
+    offline_best_output = agent.display_policy(grid, q_table)
+
+    # Print by symbolic best policy by row
+    for row in offline_best_output:
+        print(row)
+
+    
+    # Plotting metrics
+    episodes = range(1, len(agent.q_changes)+1)
+    
+    plt.figure(figsize=(12, 4))
+    plt.suptitle(f'OFFLINE LEARNING : LR {lr:.2f}, DF {df:.2f}, P {penalty:.2f}')
+    plt.subplot(1, 3, 1)
+    plt.plot(episodes, agent.returns, label="Return")
+    plt.xlabel("Episode")
+    plt.ylabel("Return")
+    plt.title("Episode Returns")
+    plt.grid(True)
+
+    plt.subplot(1, 3, 2)
+    plt.plot(episodes, agent.q_changes, label="$\delta$Q", color="orange")
+    plt.xlabel("Episode")
+    plt.ylabel("Avg |$\delta$Q|")
+    plt.title("Q-value Changes")
+    plt.grid(True)
+
+    plt.subplot(1, 3, 3)
+    plt.plot(episodes, agent.policy_stable, label="Stability", color="green")
+    plt.xlabel("Episode")
+    plt.ylabel("Stable fraction")
+    plt.title("Policy Stability")
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
     
 
 def main():
@@ -138,6 +202,50 @@ def main():
     # Run online learning
     OnlineLearning(lr, df, er, num_episodes,penalty=p)
     tok = time.time()
+    runtime = tok-tik
+    print(f'Runtime: {runtime:.3f} seconds')
+
+
+
+    ################################################################################
+    # Start of Offline Q-learning
+    ################################################################################
+
+    # Parameters for Offline Learning
+    lr_ = [0.05, 0.1, 0.3]
+    df_ = [0.8, 0.95,0.99]
+    penalty = -1            # Value in penalty state
+    episodes = 100          # Number of episodes for dataset creation (used to train off of)
+    epoch = 100             # Number of times to run Qlearning for offline
+
+    # Time how long it takes to run offline learning
+    tik = time.time()  # Start time
+
+    for i in lr_:
+        for j in df_:
+            OfflineLearning(episodes, epoch, i, j, penalty=penalty)
+
+    tok = time.time()  # End time
+
+    runtime = tok-tik
+    print(f'Runtime: {runtime:.3f} seconds')
+
+    ### Offline Learning Large Penalty #############################################
+    
+    # Parameters for Offline Learning
+    lr = 0.1           # learning rate
+    df = 0.9           # discount factor
+    p = -200           # Value in penalty state
+    episodes = 100     # Number of episodes for dataset creation (used to train off of)
+    epoch = 100        # Number of times to run Qlearning for offline
+
+    # Time how long it takes to run offline learning
+    tik = time.time()  # Start time
+    
+    # Run online learning
+    OfflineLearning(episodes, epoch, i, j, penalty=penalty)
+    tok = time.time()  # End time
+
     runtime = tok-tik
     print(f'Runtime: {runtime:.3f} seconds')
 
