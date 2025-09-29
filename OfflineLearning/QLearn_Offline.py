@@ -189,7 +189,7 @@ class QLearningOffline:
         Returns:
             ndarray: A 2D array containing rewards in Qtable
         """
-    
+
         q_table = self.initialize_q_table(grid)       # Initialize empty 9x4 Qtable
         valid_state_index = self._valid_state_index   # Get dictionary containing all viable agent spaces for indexing
         
@@ -235,7 +235,7 @@ class QLearningOffline:
                 deltas.append(np.mean(diff))
 
                 total_reward += reward
-                self.offline_calc_metrics(q_table, deltas, total_reward)
+                self.offline_calc_metrics(q_table, deltas, total_reward) # FIX DATA BALLOON
 
                 # Check to see if path converges
                 if self.q_val_delta <= BREAK_CON:

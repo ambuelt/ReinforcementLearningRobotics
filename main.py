@@ -148,7 +148,7 @@ def OfflineLearning(episode: int, epoch: int, lr: float, df: float, penalty: flo
     episodes = range(1, len(agent.q_changes)+1)
     
     # 1 = plot the data, 0 = turn plot off
-    if 1:
+    if 0:
         plt.figure(figsize=(12, 4))
         plt.suptitle(f'OFFLINE : LR {lr:.2f}, DF {df:.2f}, P {penalty:.2f}')
         plt.subplot(1, 3, 1)
