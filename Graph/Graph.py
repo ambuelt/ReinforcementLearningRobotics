@@ -22,6 +22,12 @@ class GridWorld:
         self._rows, self._cols = self.grid.shape
         self.start_state = start_state
         self.state = self.start_state
+
+        # Set penalty to be used in displaying policy
+        self.penalty = penalty
+        
+        # Direction relations: 0=up/North,1=right/East,2=down/South,3=left/West
+        self.actions = [0, 1, 2, 3]
         
         # cost for each step and slip probability (10% chance to slip left, 10% chance to slip right, 80% chance to go intended direction)
         self.step_cost = -0.04
