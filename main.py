@@ -150,23 +150,23 @@ def OfflineLearning(episode: int, epoch: int, lr: float, df: float, penalty: flo
     # 1 = plot the data, 0 = turn plot off
     if 1:
         plt.figure(figsize=(12, 4))
-        plt.suptitle(f'OFFLINE : LR {lr:.2f}, DF {df:.2f}, ER {er:.2f}, P {penalty:.2f}')
+        plt.suptitle(f'OFFLINE : LR {lr:.2f}, DF {df:.2f}, P {penalty:.2f}')
         plt.subplot(1, 3, 1)
-        plt.plot(episodes, returns, label="Return")
+        plt.plot(episodes, agent.returns, label="Return")
         plt.xlabel("Episode")
         plt.ylabel("Return")
         plt.title("Episode Returns")
         plt.grid(True)
 
         plt.subplot(1, 3, 2)
-        plt.plot(episodes, q_changes, label="$\delta$Q", color="orange")
+        plt.plot(episodes, agent.q_changes, label="$\delta$Q", color="orange")
         plt.xlabel("Episode")
         plt.ylabel("Avg |$\delta$Q|")
         plt.title("Q-value Changes")
         plt.grid(True)
 
         plt.subplot(1, 3, 3)
-        plt.plot(episodes, policy_stable, label="Stability", color="green")
+        plt.plot(episodes, agent.policy_stable, label="Stability", color="green")
         plt.xlabel("Episode")
         plt.ylabel("Stable fraction")
         plt.title("Policy Stability")
