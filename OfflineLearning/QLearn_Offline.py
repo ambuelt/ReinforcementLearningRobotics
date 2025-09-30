@@ -236,22 +236,9 @@ class QLearningOffline:
                 # Determine how much Qsa has changed upon updating and take average change across Qtable per best action step
                 diff = np.abs(new_q_sa - old_q_sa)
                 deltas.append(diff / q_table_dim)
-
-                # ATTEMPT AT TRYING TO DO GREEDY POLICY WITHOUT LOOP BUT WILL STILL ADD UP BASED ON DATASET
-                # Determine next best state using greedy policy for reward tracking
-                best_action = int(np.argmax(q_table[state_index, :]))
-
-                # Tracks reward and next state
-                next_state, reward, done = grid.step(best_action)
-
-                # Add reward for moving to best state
-                total_reward += reward
             
             # At the end of each runthrough of the dataset, track metrics which fixes 200000 iterations (rewards still wrong)
-            # Reward for dataset will just add up the reward of all randomly generated states in dataset
-            # Would have to also implement greedy policy and test it to get a reward value that changes.
-            # Which is still a work in progress and where I am getting stuck
-            self.offline_calc_metrics(q_table, deltas, total_reward) # FIX DATA BALLOON
+            self.offline_calc_metrics(q_table, deltas)
 
             # Check to see if path converges
             if self.q_val_delta <= BREAK_CON:
@@ -290,5 +277,3 @@ class QLearningOffline:
         # Sets current best policy to be previous policy for iteration comparison
         self.prev_policy = greedy_policy.copy()
 
-        # Determines the total reward per policy
-        self.returns.append(total_reward)
