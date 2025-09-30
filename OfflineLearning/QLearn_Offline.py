@@ -30,8 +30,8 @@ class QLearningOffline:
 
         # Parameters for Offline Learning
         self.epoch = epoch
-        self.alpha = learning_rate
-        self.gamma = discount_factor
+        self.learning_rate = learning_rate
+        self.discount_factor = discount_factor
 
         # Parameters for metrics tracking
         self.q_val_delta = 0      # Mean of delta between Qtable iterations
@@ -178,6 +178,7 @@ class QLearningOffline:
     
         return data_set
     
+    
     def offline_q_learning(self, grid, data_set) -> np.ndarray:
         """
         Creates the dataset for the offline learning algorithm to use to determine best action per state
@@ -192,6 +193,7 @@ class QLearningOffline:
 
         q_table = self.initialize_q_table(grid)       # Initialize empty 9x4 Qtable
         valid_state_index = self._valid_state_index   # Get dictionary containing all viable agent spaces for indexing
+        q_table_dim = np.size(q_table)                # Gets the size of q_table to use to calc mean
         
         # Run trials to test different paths and shuffle training data for less bias
         for trial in range(self.epoch):
@@ -202,9 +204,6 @@ class QLearningOffline:
     
             # Run Q learning for each state within the data set to determine best action using Bellmans Equation
             for (state, action, reward, next_state) in data_set:
-    
-                # Copy to use as reference for delta
-                old_q_table = q_table.copy()
                 
                 # Don't neet to know best direction once terminal states are reached! You want to stay there!!
                 if grid.is_terminal(state):
@@ -214,39 +213,56 @@ class QLearningOffline:
     
                 # Determine current action-value
                 q_sa = q_table[state_index, action]
+
+                # Use as reference for delta (used to save runtime over copying full table)
+                old_q_sa = q_sa
     
                 # Determine if next step is going to be a wall, penalty, or final reward state
                 if grid.is_terminal(next_state):
-                    best_action = 0.0
+                    max_next = 0.0
 
                 # Use Q(s, a) ← Q(s, a) + alpha * [ r + gamma max_{a'} Q(s', a') - Q(s, a) ] equation
                 else:
                     next_state_index = valid_state_index[next_state]
-                    best_action = float(np.max(q_table[next_state_index, :]))
+                    max_next = float(np.max(q_table[next_state_index, :]))
                 
                 # [ r + gamma max_{a'} Q(s', a') - Q(s, a) ]
-                target = (reward + (self.gamma * best_action)) - q_sa
+                target = (reward + (self.discount_factor * max_next)) - q_sa
         
                 # Q(s, a) ← Q(s, a) + alpha [ target ]  <-- updates Qtable
-                q_table[state_index, action] = q_sa + self.alpha * (target)
+                q_table[state_index, action] = q_sa + self.learning_rate * (target)
+                new_q_sa = q_table[state_index, action]
 
-                # Determine how much Qtable has changed upon updating
-                diff = np.abs(q_table - old_q_table)
-                deltas.append(np.mean(diff))
+                # Determine how much Qsa has changed upon updating and take average change across Qtable per best action step
+                diff = np.abs(new_q_sa - old_q_sa)
+                deltas.append(diff / q_table_dim)
 
+                # ATTEMPT AT TRYING TO DO GREEDY POLICY WITHOUT LOOP BUT WILL STILL ADD UP BASED ON DATASET
+                # Determine next best state using greedy policy for reward tracking
+                best_action = int(np.argmax(q_table[state_index, :]))
+
+                # Tracks reward and next state
+                next_state, reward, done = grid.step(best_action)
+
+                # Add reward for moving to best state
                 total_reward += reward
-                self.offline_calc_metrics(q_table, deltas, total_reward) # FIX DATA BALLOON
+            
+            # At the end of each runthrough of the dataset, track metrics which fixes 200000 iterations (rewards still wrong)
+            # Reward for dataset will just add up the reward of all randomly generated states in dataset
+            # Would have to also implement greedy policy and test it to get a reward value that changes.
+            # Which is still a work in progress and where I am getting stuck
+            self.offline_calc_metrics(q_table, deltas, total_reward) # FIX DATA BALLOON
 
-                # Check to see if path converges
-                if self.q_val_delta <= BREAK_CON:
-                    break
+            # Check to see if path converges
+            if self.q_val_delta <= BREAK_CON:
+                break
 
         return q_table
     
 
     def offline_calc_metrics(self, q_table, deltas, total_reward) -> None:
         """
-        Creates the dataset for the offline learning algorithm to use to determine best action per state
+        Calculates the Average Q Value change, policy stability, and total reward per policy
     
         Args:
             grid (GridWorld): The environment to run the training
@@ -276,4 +292,3 @@ class QLearningOffline:
 
         # Determines the total reward per policy
         self.returns.append(total_reward)
-
