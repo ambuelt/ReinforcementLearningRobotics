@@ -4,10 +4,11 @@ import OfflineLearning.QLearn_Offline as ql_off
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import itertools
 
 BREAK_CON = 0.00008
 
-def OnlineLearning(lr: float, df: float, er: float, num_episodes: int, penalty: float) -> None:
+def OnlineLearning(lr: float, df: float, er: float, num_episodes: int, penalty: float) -> dict:
     """
     Runs Q-learning online on the GridWorld environment and tracks metrics.
     """
@@ -78,39 +79,21 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int, penalty: 
     print("Policy stability   :", [f"{v:.2f}" for v in policy_stable[-window:]])
     print('State Action Grid:\n',q_action_pair)
 
-    
-    # Plotting metrics
-    episodes = range(1, len(q_changes)+1)
 
-    # 1 = plot the data, 0 = turn plot off
-    if 1:
-        plt.figure(figsize=(12, 4))
-        plt.suptitle(f'ONLINE : LR {lr:.2f}, DF {df:.2f}, ER {er:.2f}, P {penalty:.2f}')
-        plt.subplot(1, 3, 1)
-        plt.plot(episodes, returns, label="Return")
-        plt.xlabel("Episode")
-        plt.ylabel("Return")
-        plt.title("Episode Returns")
-        plt.grid(True)
+    # Create dictionary to use to plot all lr, df, and er values on same plot
+    results = {
+        'lr': lr,
+        'df': df,
+        'er': er,
+        'penalty': penalty,
+        'returns': returns,
+        'q_changes': q_changes,
+        'policy_stable': policy_stable
+    }
 
-        plt.subplot(1, 3, 2)
-        plt.plot(episodes, q_changes, label="$\delta$Q", color="orange")
-        plt.xlabel("Episode")
-        plt.ylabel("Avg |$\delta$Q|")
-        plt.title("Q-value Changes")
-        plt.grid(True)
+    return results
 
-        plt.subplot(1, 3, 3)
-        plt.plot(episodes, policy_stable, label="Stability", color="green")
-        plt.xlabel("Episode")
-        plt.ylabel("Stable fraction")
-        plt.title("Policy Stability")
-        plt.grid(True)
-
-        plt.tight_layout()
-        plt.show()
-
-def OfflineLearning(grid, agent, data_set, epoch: int, lr: float, df: float, penalty: float) -> None:
+def OfflineLearning(grid, agent, data_set, epoch: int, lr: float, df: float, penalty: float) -> dict:
     """
     Runs offline Q-learning in the GridWorld environment and tracks metrics
     """
@@ -122,70 +105,165 @@ def OfflineLearning(grid, agent, data_set, epoch: int, lr: float, df: float, pen
     # Final metrics output
     window = 10
     print("\n=== Metrics (last {} episodes) ===".format(window))
-    print("Average return     :", [f"{v:.2f}" for v in agent.returns[-window:]])
     print("Q-value changes    :", [f"{v:.6f}" for v in agent.q_changes[-window:]])
     print("Policy stability   :", [f"{v:.2f}" for v in agent.policy_stable[-window:]])
 
     # Show final Q-Action pair for each grid
-    offline_best_output = agent.display_policy(grid, q_table)
+    offline_best_output = agent.display_policy(grid, q_table, penalty)
 
     # Print by symbolic best policy by row
     for row in offline_best_output:
         print(row)
 
+
+    # Create dictionary to use to plot all lr and df values on same plot
+    results = {
+        'lr': lr,
+        'df': df,
+        'er': 0.0,
+        'penalty': penalty,
+        'returns': agent.returns,
+        'q_changes': agent.q_changes,
+        'policy_stable': agent.policy_stable
+    }
+
+    return results
+
+
+def plot_metrics(results, variable: str, subtitle: str):
+    """
+    Plots curves for a singular parameter sweep rates
+
+    Args:
+            results (list): The environment to run the training
+            variable (str): Determines what parameter is being varied per plot
+            subtitle (str): Displays the type of QLearning being run
+
+    """
     
-    # Plotting metrics
-    episodes = range(1, len(agent.q_changes)+1)
+    plt.figure(figsize=(12, 4))
+    linestyles = ['-', '--', ':']
+    lines = itertools.cycle(linestyles)
+    marker_list = ['.', 'x', 's', '^', '+', 'D', 'o']
+    markers = itertools.cycle(marker_list)
+
+    # Check if there is no varying hyper parameter
+    if variable == None:
+        plt.suptitle(f'{subtitle}')
+    else:
+        plt.suptitle(f'{subtitle} for Varied - {variable.upper()}')
+
+    # Plot Returns
+    plt.subplot(1, 3, 1)
     
-    # 1 = plot the data, 0 = turn plot off
-    if 0:
-        plt.figure(figsize=(12, 4))
-        plt.suptitle(f'OFFLINE : LR {lr:.2f}, DF {df:.2f}, P {penalty:.2f}')
-        plt.subplot(1, 3, 1)
-        plt.ticklabel_format(style='plain', axis='y', useOffset=False)   # Make it so that rewards are not done in scientific notation
-        plt.plot(episodes, agent.returns, label="Return")
-        plt.xlabel("Episode")
-        plt.ylabel("Return")
-        plt.title("Episode Returns")
-        plt.grid(True)
+    # Plot all results from dictionary
+    for res in results:
+        episodes = range(1, len(res['returns'])+1)
+        marker = next(markers)
+        line = next(lines)
+        
+        # Check if there is no varying hyper parameter
+        if variable == None:
+            plt_label = 'Return'
+            plt.plot(episodes, res['returns'], label=plt_label)
+        else:
+            plt_label = f'{variable.upper()} = {res[variable]}'
+            plt.plot(episodes, res['returns'], label=plt_label, alpha=0.85, marker=marker, markersize=2, linestyle=line)
 
-        plt.subplot(1, 3, 2)
-        plt.plot(episodes, agent.q_changes, label="$\delta$Q", color="orange")
-        plt.xlabel("Episode")
-        plt.ylabel("Avg |$\delta$Q|")
-        plt.title("Q-value Changes")
-        plt.grid(True)
+    plt.xlabel("Episode")
+    plt.ylabel("Return")
+    plt.title("Episode Returns")
+    plt.legend()
+    plt.grid(True)
 
-        plt.subplot(1, 3, 3)
-        plt.plot(episodes, agent.policy_stable, label="Stability", color="green")
-        plt.xlabel("Episode")
-        plt.ylabel("Stable fraction")
-        plt.title("Policy Stability")
-        plt.grid(True)
+    # Plot Average change in Q
+    plt.subplot(1, 3, 2)
+    markers = itertools.cycle(marker_list) # Reset Marker list
+    lines = itertools.cycle(linestyles)
 
-        plt.tight_layout()
-        plt.show()
+    # Plot all results from dictionary
+    for res in results:
+        episodes = range(1, len(res['q_changes'])+1)
+        marker = next(markers)
+        line = next(lines)
+        
+        # Check if there is no varying hyper parameter
+        if variable == None:
+            plt_label = '$\delta$Q'
+            plt.plot(episodes, res['q_changes'], label=plt_label, color='orange')
+        else:
+            plt_label = f'{variable.upper()} = {res[variable]}'
+            plt.plot(episodes, res['q_changes'], label=plt_label, alpha=0.85, marker=marker, markersize=2, linestyle=line)
+
+    plt.xlabel("Episode")
+    plt.ylabel("Avg |$\delta$Q|")
+    plt.title("Q-value Changes")
+    plt.legend()
+    plt.grid(True)
+
+    # Plot Returns
+    plt.subplot(1, 3, 3)
+    markers = itertools.cycle(marker_list) # Reset Marker list
+    lines = itertools.cycle(linestyles)
+    
+    # Plot all results from dictionary
+    for res in results:
+        episodes = range(1, len(res['policy_stable'])+1)
+        marker = next(markers)
+        line = next(lines)
+
+        # Check if there is no varying hyper parameter
+        if variable == None:
+            plt_label = 'Stability'
+            plt.plot(episodes, res['policy_stable'], label=plt_label, color='green')
+        else:
+            plt_label = f'{variable.upper()} = {res[variable]}'
+            plt.plot(episodes, res['policy_stable'], label=plt_label, alpha=0.85, marker=marker, markersize=2, linestyle=line)
+
+    plt.xlabel("Episode")
+    plt.ylabel("Stable fraction")
+    plt.title("Policy Stability")
+    plt.legend()
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.show()
+
     
 
 def main():
     lr_ = [0.05, 0.1, 0.3]
     df_ = [0.8, 0.95,0.99]
     er_ = [0.05,0.2, 0.5]
-    
-    
     p = -1
-    tik = time.time()
+    lr_results, df_results, er_results = [], [], [] # Create empty lists to store different variable results
+    
     num_episodes = 500 # number of episodes for training
+
+    # Run online learning
+    tik = time.time()
+
     for i in lr_:
-        for j in df_:
-            for k in er_:
-                # Run online learning
-                OnlineLearning(i, j, k, num_episodes,penalty=p)
+        online_res = OnlineLearning(i, df_[1], er_[1], num_episodes,penalty=p)
+        lr_results.append(online_res)
+
+    for j in df_:
+        online_res = OnlineLearning(lr_[1], j, er_[1], num_episodes,penalty=p)
+        df_results.append(online_res)
+            
+    for k in er_:
+        online_res = OnlineLearning(lr_[1], df_[1], k, num_episodes,penalty=p)
+        er_results.append(online_res)
+
     tok = time.time()
     runtime = tok-tik
     print(f'Runtime: {runtime:.3f} seconds')
+
+    # Plot all results in one figure
+    plot_metrics(lr_results, variable='lr', subtitle=f'Online - Penalty {p:.2f}')
+    plot_metrics(df_results, variable='df', subtitle=f'Online - Penalty {p:.2f}')
+    plot_metrics(er_results, variable='er', subtitle=f'Online - Penalty {p:.2f}')
     
-   
     
     tik = time.time()
     # Parameters
@@ -195,11 +273,15 @@ def main():
     p = -200
     
     # Run online learning
-    OnlineLearning(lr, df, er, num_episodes,penalty=p)
+    results = []
+    online_res = OnlineLearning(lr, df, er, num_episodes,penalty=p)
+    results.append(online_res)
+
     tok = time.time()
     runtime = tok-tik
     print(f'Runtime: {runtime:.3f} seconds')
 
+    plot_metrics(results, variable=None, subtitle=f'Online - Penalty {p:.2f}')
 
 
     ################################################################################
@@ -207,8 +289,10 @@ def main():
     ################################################################################
 
     # Parameters for Offline Learning
-    lr_ = [0.05, 0.1, 0.3]
-    df_ = [0.8, 0.95,0.99]
+    #lr_ = [0.05, 0.1, 0.3]
+    lr_ = [0.3, 0.1, 0.05]
+    #df_ = [0.8, 0.95,0.99]
+    df_ = [0.99, 0.95,0.8]
     penalty = -1            # Value in penalty state
     episodes = 100          # Number of episodes for dataset creation (used to train off of)
     epoch = 100             # Number of times to run Qlearning for offline
@@ -223,17 +307,29 @@ def main():
     # Set outside of Offline Learning function so all data is trained off the same dataset and reduces run time
     data_set = agent.generate_training_dataset(grid, episodes)
 
+    lr_results, df_results = [], []
+
     # Time how long it takes to run offline learning
     tik = time.time()  # Start time
 
     for i in lr_:
-        for j in df_:
-            OfflineLearning(grid, agent, data_set, epoch, i, j, penalty=penalty)
+        offline_res = OfflineLearning(grid, agent, data_set, epoch, i, df_[1], penalty=penalty)
+        lr_results.append(offline_res)
+
+    for j in df_:
+        offline_res = OfflineLearning(grid, agent, data_set, epoch, lr_[1], j, penalty=penalty)
+        df_results.append(offline_res)
+            
 
     tok = time.time()  # End time
 
     runtime = tok-tik
     print(f'Runtime: {runtime:.3f} seconds')
+
+    # Plot all results in one figure
+    plot_metrics(lr_results, variable='lr', subtitle=f'Offline - Penalty {penalty:.2f}')
+    plot_metrics(df_results, variable='df', subtitle=f'Offline - Penalty {penalty:.2f}')
+
 
     ### Offline Learning Large Penalty #############################################
     
@@ -243,14 +339,27 @@ def main():
     pen = -200         # Value in penalty state
     epoch = 100        # Number of times to run Qlearning for offline
 
+    # i) Create grid world environment
+    grid = g.GridWorld(penalty = penalty)
+    
+    # ii) Create Q-learning offline agent
+    agent = ql_off.QLearningOffline(grid, epoch=epoch, learning_rate=lr, discount_factor=df)
+
+    # iii) Create dataset to train on made up of a list of tuples containing the current state, action, reward, and next state
+    # Set outside of Offline Learning function so all data is trained off the same dataset and reduces run time
+    data_set = agent.generate_training_dataset(grid, episodes)
+
     # Time how long it takes to run offline learning
     tik = time.time()  # Start time
-    OfflineLearning(grid, agent, data_set, epoch, i, j, penalty=pen)  # Run online learning
+    results = []
+    offline_res = OfflineLearning(grid, agent, data_set, epoch, lr, df, penalty=pen)  # Run online learning
+    results.append(offline_res)
     tok = time.time()  # End time
 
     runtime = tok-tik
     print(f'Runtime: {runtime:.3f} seconds')
 
+    plot_metrics(results, variable=None, subtitle=f'Offline - Penalty {pen:.2f}')
 
 
 if __name__ == "__main__":
