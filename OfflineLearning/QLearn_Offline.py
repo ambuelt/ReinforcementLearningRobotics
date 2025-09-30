@@ -86,7 +86,7 @@ class QLearningOffline:
         return q_table
 
     
-    def display_policy(self, grid, q_table) -> list:
+    def display_policy(self, grid, q_table, penalty: int) -> list:
         """
         Creates the dataset for the offline learning algorithm to use to determine best action per state
     
@@ -117,7 +117,7 @@ class QLearningOffline:
                 # If state is terminal, stay there
                 if grid.is_terminal(state):
                     if val == grid.penalty:
-                        disp_row.append(str(val))    # display penalty state
+                        disp_row.append(str(penalty))    # display penalty state
                     else:
                         disp_row.append('+1')        # display final reward state
 
@@ -276,5 +276,6 @@ class QLearningOffline:
 
         # Sets current best policy to be previous policy for iteration comparison
         self.prev_policy = greedy_policy.copy()
+
 
 
