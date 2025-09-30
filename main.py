@@ -110,24 +110,14 @@ def OnlineLearning(lr: float, df: float, er: float, num_episodes: int, penalty: 
         plt.tight_layout()
         plt.show()
 
-def OfflineLearning(episode: int, epoch: int, lr: float, df: float, penalty: float) -> None:
+def OfflineLearning(grid, agent, data_set, epoch: int, lr: float, df: float, penalty: float) -> None:
     """
     Runs offline Q-learning in the GridWorld environment and tracks metrics
     """
-    
-    # i) Create grid world environment
-    grid = g.GridWorld(penalty = penalty)
-    
-    # ii) Create Q-learning offline agent
-    agent = ql_off.QLearningOffline(grid, epoch=epoch, learning_rate=lr, discount_factor=df)
-
-    # iii) Create dataset to train on made up of a list of tuples containing the current state, action, reward, and next state
-    data_set = agent.generate_training_dataset(grid, episode)
 
     # iv) Update Offline Qlearning
     q_table = agent.offline_q_learning(grid, data_set)
     
-      
 
     # Final metrics output
     window = 10
@@ -152,6 +142,7 @@ def OfflineLearning(episode: int, epoch: int, lr: float, df: float, penalty: flo
         plt.figure(figsize=(12, 4))
         plt.suptitle(f'OFFLINE : LR {lr:.2f}, DF {df:.2f}, P {penalty:.2f}')
         plt.subplot(1, 3, 1)
+        plt.ticklabel_format(style='plain', axis='y', useOffset=False)   # Make it so that rewards are not done in scientific notation
         plt.plot(episodes, agent.returns, label="Return")
         plt.xlabel("Episode")
         plt.ylabel("Return")
@@ -221,13 +212,23 @@ def main():
     penalty = -1            # Value in penalty state
     episodes = 100          # Number of episodes for dataset creation (used to train off of)
     epoch = 100             # Number of times to run Qlearning for offline
+    
+    # i) Create grid world environment
+    grid = g.GridWorld(penalty = penalty)
+    
+    # ii) Create Q-learning offline agent
+    agent = ql_off.QLearningOffline(grid, epoch=epoch, learning_rate=lr, discount_factor=df)
+
+    # iii) Create dataset to train on made up of a list of tuples containing the current state, action, reward, and next state
+    # Set outside of Offline Learning function so all data is trained off the same dataset and reduces run time
+    data_set = agent.generate_training_dataset(grid, episodes)
 
     # Time how long it takes to run offline learning
     tik = time.time()  # Start time
 
     for i in lr_:
         for j in df_:
-            OfflineLearning(episodes, epoch, i, j, penalty=penalty)
+            OfflineLearning(grid, agent, data_set, epoch, i, j, penalty=penalty)
 
     tok = time.time()  # End time
 
@@ -239,15 +240,12 @@ def main():
     # Parameters for Offline Learning
     lr = 0.1           # learning rate
     df = 0.9           # discount factor
-    p = -200           # Value in penalty state
-    episodes = 100     # Number of episodes for dataset creation (used to train off of)
+    pen = -200         # Value in penalty state
     epoch = 100        # Number of times to run Qlearning for offline
 
     # Time how long it takes to run offline learning
     tik = time.time()  # Start time
-    
-    # Run online learning
-    OfflineLearning(episodes, epoch, i, j, penalty=penalty)
+    OfflineLearning(grid, agent, data_set, epoch, i, j, penalty=pen)  # Run online learning
     tok = time.time()  # End time
 
     runtime = tok-tik
