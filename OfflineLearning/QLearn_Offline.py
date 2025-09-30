@@ -247,7 +247,7 @@ class QLearningOffline:
         return q_table
     
 
-    def offline_calc_metrics(self, q_table, deltas, total_reward) -> None:
+    def offline_calc_metrics(self, q_table, deltas) -> None:
         """
         Calculates the Average Q Value change, policy stability, and total reward per policy
     
@@ -276,4 +276,5 @@ class QLearningOffline:
 
         # Sets current best policy to be previous policy for iteration comparison
         self.prev_policy = greedy_policy.copy()
+
 
