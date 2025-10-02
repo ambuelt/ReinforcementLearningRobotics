@@ -34,6 +34,7 @@ class QLearningOffline:
         self.discount_factor = discount_factor
 
         # Parameters for metrics tracking
+        self.test_interval = 5    # Determines after how many tuples in dataset to evaluate the policy
         self.q_val_delta = 0      # Mean of delta between Qtable iterations
         self.q_changes = []       # average |delta Q| per episode
         self.policy_stable = []   # fraction of states with unchanged greedy action
@@ -127,7 +128,7 @@ class QLearningOffline:
                 
                 # If in state where you can move, determine best action (0-3) and add that symbol
                 else:
-                    state_index = self._valid_state_index[state]  # Grab r, c combination
+                    state_index = self._valid_state_index[state]
 
                     # Get best action + add to row list
                     best_action_position = np.argmax(q_table[state_index, :])
@@ -139,44 +140,6 @@ class QLearningOffline:
         symbol_grid.reverse()
 
         return symbol_grid
-
-
-    def generate_training_dataset(self, grid, trials: int = 100) -> list[Tuple[Tuple[int, int], int, float, Tuple[int, int]]]:
-        """
-        Creates the dataset for the offline learning algorithm to use to determine best action per state
-    
-        Args:
-            grid (GridWorld): The environment to run the training
-            trials (int): The number of complete paths from start state to terminal state
-                
-        Returns:
-            list[Tuple[Tuple[int, int], int, float, Tuple[int, int]]]: A list of tuples containing the current state, action, reward, and next state
-        """
-
-        actions = grid.actions  # Set up directional choices: 0=North, 1=East, 2=South, 3=West   
-        data_set = []           # Set up empty dataset to host training trials
-    
-        # Run all trials to create large dataset for offline q_learning
-        for trial in range(trials):
-            state = grid.reset()      # initialize state to starting state
-            done = False              # since currently in starting state, not done
-    
-            # Run until termincal state (penalty or +1) is reached
-            while not done:
-                # i) Select random action
-                action = int(np.random.choice(actions))
-    
-                # ii)  Takes a step in the grid environment
-                # Tracks reward and next state
-                next_state, reward, done = grid.step(action)
-    
-                # iii) Adds trial to list of tuple trials
-                data_set.append((state, action, reward, next_state))
-    
-                # iv) Sets current state to next state (transistion)
-                state = next_state
-    
-        return data_set
     
     
     def offline_q_learning(self, grid, data_set) -> np.ndarray:
@@ -193,14 +156,15 @@ class QLearningOffline:
 
         q_table = self.initialize_q_table(grid)       # Initialize empty 9x4 Qtable
         valid_state_index = self._valid_state_index   # Get dictionary containing all viable agent spaces for indexing
+        print(str(valid_state_index))
         q_table_dim = np.size(q_table)                # Gets the size of q_table to use to calc mean
         
         # Run trials to test different paths and shuffle training data for less bias
         for trial in range(self.epoch):
             np.random.shuffle(data_set)   # Shuffle data for each pass to ensure better training
 
-            total_reward = 0.0            # Track reward as Qtable is navigated per epoch
             deltas = []                   # Track Q-value changes in this episode
+            total_reward = 0.0            # Tracks total rewards per best policy
     
             # Run Q learning for each state within the data set to determine best action using Bellmans Equation
             for (state, action, reward, next_state) in data_set:
@@ -227,10 +191,10 @@ class QLearningOffline:
                     max_next = float(np.max(q_table[next_state_index, :]))
                 
                 # [ r + gamma max_{a'} Q(s', a') - Q(s, a) ]
-                target = (reward + (self.discount_factor * max_next)) - q_sa
+                target = (reward + (self.discount_factor * max_next))
         
                 # Q(s, a) ← Q(s, a) + alpha [ target ]  <-- updates Qtable
-                q_table[state_index, action] = q_sa + self.learning_rate * (target)
+                q_table[state_index, action] = q_sa + self.learning_rate * (target - q_sa)
                 new_q_sa = q_table[state_index, action]
 
                 # Determine how much Qsa has changed upon updating and take average change across Qtable per best action step
@@ -240,6 +204,13 @@ class QLearningOffline:
             # At the end of each runthrough of the dataset, track metrics which fixes 200000 iterations (rewards still wrong)
             self.offline_calc_metrics(q_table, deltas)
 
+            #if (trial % self.test_interval) == 0:
+            #    total_reward = self.evaluate_policy(grid, q_table)
+            #    self.returns.append(total_reward)
+
+            total_reward = self.evaluate_policy(grid, q_table)
+            self.returns.append(total_reward)
+
             # Check to see if path converges
             if self.q_val_delta <= BREAK_CON:
                 break
@@ -247,6 +218,45 @@ class QLearningOffline:
         return q_table
     
 
+    def evaluate_policy(self, grid, q_table):
+        """
+        Calculates the total reward per optimal policy
+    
+        Args:
+            grid (GridWorld): The environment to run the training
+            q_table (ndarray): Holds the updated reward values            
+        
+        """
+        max_steps = 50            # Determines the max steps to take in environment when not converged
+        steps = 0                 # Counts steps walking through greedy policy
+        actions = grid.actions    # Set up directional choices: 0=North, 1=East, 2=South, 3=West
+        total_reward = 0.0        # Track reward as Qtable is navigated per every test_interval
+        state = grid.reset()      # initialize state to starting state
+        done = False              # since currently in starting state, not done
+
+        # Run until termincal state (penalty or +1) is reached
+        while not done:
+
+            # Don't want to run testing for too long
+            if steps >= max_steps:
+                break
+
+            # i) Select best action
+            state_index = self._valid_state_index[state]
+            actions = q_table[state_index, :]
+            best_action = int(np.argmax(actions))
+
+            # ii)  Takes a step in the grid environment
+            # Tracks reward and next state
+            next_state, reward, done = grid.step(best_action)
+
+            # iii) Sets current state to next state (transistion)
+            state = next_state
+            total_reward += reward
+            steps += 1
+        
+        return total_reward
+    
     def offline_calc_metrics(self, q_table, deltas) -> None:
         """
         Calculates the Average Q Value change, policy stability, and total reward per policy
@@ -276,6 +286,4 @@ class QLearningOffline:
 
         # Sets current best policy to be previous policy for iteration comparison
         self.prev_policy = greedy_policy.copy()
-
-
 
