@@ -1,8 +1,8 @@
 # ASU EEE 598 - Reinforcement Learning in Robotics
-# Homework 1 - Team 3
+# Homework 2 - Team 3
 
 Run the project with Python.  
-Requires **numpy** and **matplotlib**.
+Requires environment.yaml
 
 ## Usage
 ```bash
