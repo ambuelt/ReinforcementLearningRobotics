@@ -1,9 +1,4 @@
-# ASU EEE 598 - Reinforcement Learning in Robotics
-# Homework 1 - Team 3
+# Team 3 Final Extra Credit
 
-Run the project with Python.  
-Requires **numpy** and **matplotlib**.
-
-## Usage
-```bash
-python main.py
+Each of these zip files contains the results of our training runs.
+Note that my-experiment-1 and my-experiment-2 follow the lawn mowing (1) and exploration (2) from the source code repo.
